@@ -11,38 +11,42 @@ def connect():
     return psycopg2.connect("dbname=tournament")
 
 
-def deleteMatches():
+def db_cursor(func):
+    def wrapper(*args, **kwargs):
+        conn = connect()
+        cursor = conn.cursor()
+        fun = func(cursor, *args, **kwargs)
+        conn.commit()
+        conn.close()
+        return fun
+    return wrapper
+
+
+@db_cursor
+def deleteMatches(cursor):
     """Remove all the match records from the database."""
     query = "DELETE FROM matches"
-    con = connect()
-    cursor = con.cursor()
     cursor.execute(query)
-    con.commit()
-    con.close()
 
 
-def deletePlayers():
+@db_cursor
+def deletePlayers(cursor):
     """Remove all the player records from the database."""
     query = "DELETE FROM players"
-    con = connect()
-    cursor = con.cursor()
     cursor.execute(query)
-    con.commit()
-    con.close()
 
 
-def countPlayers():
+@db_cursor
+def countPlayers(cursor):
     """Returns the number of players currently registered."""
     query = "SELECT count(*) as players_num FROM players;"
-    con = connect()
-    cursor = con.cursor()
     cursor.execute(query)
     results = cursor.fetchall()
-    con.close()
     return results[0][0]
 
 
-def registerPlayer(name):
+@db_cursor
+def registerPlayer(cursor, name):
     """Adds a player to the tournament database.
   
     The database assigns a unique serial id number for the player.  (This
@@ -52,14 +56,12 @@ def registerPlayer(name):
       name: the player's full name (need not be unique).
     """
     query = "INSERT INTO players VALUES (%s)"
-    con = connect()
-    cursor = con.cursor()
     cursor.execute(query, (name,))
-    con.commit()
-    con.close()
 
 
-def playerStandings():
+
+@db_cursor
+def playerStandings(cursor):
     """Returns a list of the players and their win records, sorted by wins.
 
     The first entry in the list should be the player in first place, or a player
@@ -76,11 +78,11 @@ def playerStandings():
              "JOIN wins ON players.id = wins.id " 
              "JOIN matches_played ON players.id = matches_played.id " 
              "ORDER BY wins DESC")
-    con = connect()
-    cursor = con.cursor()
+    # con = connect()
+    # cursor = con.cursor()
     cursor.execute(query)
     results = cursor.fetchall()
-    con.close()
+    # con.close()
     return results
 
 
