@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# 
+#
 # tournament.py -- implementation of a Swiss-system tournament
 #
 
@@ -12,6 +12,8 @@ def connect():
 
 
 def db_cursor(func):
+    """ Cursor decorator, pass a cursor to the func, so not have to initalize
+        in every func. """
     def wrapper(*args, **kwargs):
         conn = connect()
         cursor = conn.cursor()
@@ -48,10 +50,10 @@ def countPlayers(cursor):
 @db_cursor
 def registerPlayer(cursor, name):
     """Adds a player to the tournament database.
-  
+
     The database assigns a unique serial id number for the player.  (This
     should be handled by your SQL database schema, not in your Python code.)
-  
+
     Args:
       name: the player's full name (need not be unique).
     """
@@ -59,13 +61,12 @@ def registerPlayer(cursor, name):
     cursor.execute(query, (name,))
 
 
-
 @db_cursor
 def playerStandings(cursor):
     """Returns a list of the players and their win records, sorted by wins.
 
-    The first entry in the list should be the player in first place, or a player
-    tied for first place if there is currently a tie.
+    The first entry in the list should be the player in first place, or a
+    player tied for first place if there is currently a tie.
 
     Returns:
       A list of tuples, each of which contains (id, name, wins, matches):
@@ -74,19 +75,16 @@ def playerStandings(cursor):
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
-    query = ("SELECT players.id, name, wins, matches FROM players " 
-             "JOIN wins ON players.id = wins.id " 
-             "JOIN matches_played ON players.id = matches_played.id " 
+    query = ("SELECT players.id, name, wins, matches FROM players "
+             "JOIN wins ON players.id = wins.id "
+             "JOIN matches_played ON players.id = matches_played.id "
              "ORDER BY wins DESC")
-    # con = connect()
-    # cursor = con.cursor()
     cursor.execute(query)
-    results = cursor.fetchall()
-    # con.close()
-    return results
+    return cursor.fetchall()
 
 
-def reportMatch(winner, loser):
+@db_cursor
+def reportMatch(cursor, winner, loser):
     """Records the outcome of a single match between two players.
 
     Args:
@@ -94,20 +92,17 @@ def reportMatch(winner, loser):
       loser:  the id number of the player who lost
     """
     query = "INSERT INTO matches VALUES(%s, %s)"
-    con = connect()
-    cursor = con.cursor()
     cursor.execute(query, (winner, loser))
-    con.commit()
-    con.close()
- 
+
+
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.
-  
+
     Assuming that there are an even number of players registered, each player
     appears exactly once in the pairings.  Each player is paired with another
     player with an equal or nearly-equal win record, that is, a player adjacent
     to him or her in the standings.
-  
+
     Returns:
       A list of tuples, each of which contains (id1, name1, id2, name2)
         id1: the first player's unique id
